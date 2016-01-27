@@ -13,6 +13,11 @@ class GameScene: SKScene {
   // MARK: Properties
   // ================
   
+  enum PlayerDeathCauses {
+    case OutOfTime
+    case HitByCar
+  }
+  
   // Game time trackers
   // ------------------
   var lastUpdateTime: NSTimeInterval = 0        // The last time Sprite Kit called update()
@@ -58,6 +63,8 @@ class GameScene: SKScene {
   // ------------------
   let livesLabel = SKLabelNode(fontNamed: "Chalkduster")
   let timeLabel = SKLabelNode(fontNamed: "Chalkduster")
+  
+  let playerDiedLabel = SKLabelNode(fontNamed: "Chalkduster")
 
 
   // MARK: -
@@ -159,6 +166,16 @@ class GameScene: SKScene {
     timeLabel.position = CGPoint(x: 1500, y: 225)
     addChild(timeLabel)
     
+    playerDiedLabel.text = "Time's up"
+    playerDiedLabel.fontColor = SKColor.whiteColor()
+    playerDiedLabel.fontSize = 100
+    playerDiedLabel.zPosition = 100
+    playerDiedLabel.position = CGPoint(x: frame.width / 2,
+                                    y: frame.height / 2)
+    playerDiedLabel.hidden = true
+    addChild(playerDiedLabel)
+    
+    
     
     // Start the traffic
     // -----------------
@@ -216,7 +233,7 @@ class GameScene: SKScene {
           timeSinceLastClockTick = 0
           
           if timeRemaining <= 0 && playerIsAlive {
-            killPlayer()
+            killPlayer(.OutOfTime)
           }
         }
       }
@@ -252,7 +269,7 @@ class GameScene: SKScene {
     // and evaluating other sprite interactions.
     
     if playerHitCar() && playerIsAlive {
-      killPlayer()
+      killPlayer(.HitByCar)
     }
     else if player.position.y >= 1340 {
       backgroundMusicPlayer.stop()
@@ -275,7 +292,7 @@ class GameScene: SKScene {
     return result
   }
   
-  func killPlayer() {
+  func killPlayer(causeOfDeath: PlayerDeathCauses) {
     print("kill player")
     // Player loses a life
     // -------------------
@@ -298,6 +315,19 @@ class GameScene: SKScene {
     let spinAction = SKAction.rotateByAngle(4 * π, duration: 1.0)
     let shrinkAction = SKAction.scaleBy(0, duration: 1.0)
     let spinAndShrinkAction = SKAction.group([spinAction, shrinkAction])
+    let showMessageAction = SKAction.runBlock {
+      if causeOfDeath == .OutOfTime {
+        self.playerDiedLabel.text = "Out of time!"
+      }
+      else {
+        self.playerDiedLabel.text = "That'll leave a mark."
+      }
+      self.playerDiedLabel.hidden = false
+    }
+    let pause = SKAction.waitForDuration(4)
+    let hideMessageAction = SKAction.runBlock {
+      self.playerDiedLabel.hidden = true
+    }
     let removeLifeAndEvaluate = SKAction.runBlock {
       self.playerLives -= 1
       self.livesLabel.text = "Lives: \(self.playerLives)"
@@ -324,7 +354,11 @@ class GameScene: SKScene {
         self.view?.presentScene(gameOverScene, transition: horizontalFlip)
       }
     }
-    player.runAction(SKAction.sequence([spinAndShrinkAction, removeLifeAndEvaluate]))
+    player.runAction(SKAction.sequence([spinAndShrinkAction,
+                                        showMessageAction,
+                                        pause,
+                                        hideMessageAction,
+                                        removeLifeAndEvaluate]))
   }
   
   
