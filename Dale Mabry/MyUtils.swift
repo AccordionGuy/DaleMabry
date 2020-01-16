@@ -46,7 +46,7 @@ func + (left: CGPoint, right: CGPoint) -> CGPoint {
   return CGPoint(x: left.x + right.x, y: left.y + right.y)
 }
 
-func += (inout left: CGPoint, right: CGPoint) {
+func += ( left: inout CGPoint, right: CGPoint) {
   left = left + right
 }
 
@@ -54,7 +54,7 @@ func - (left: CGPoint, right: CGPoint) -> CGPoint {
   return CGPoint(x: left.x - right.x, y: left.y - right.y)
 }
 
-func -= (inout left: CGPoint, right: CGPoint) {
+func -= ( left: inout CGPoint, right: CGPoint) {
   left = left - right
 }
 
@@ -62,7 +62,7 @@ func * (left: CGPoint, right: CGPoint) -> CGPoint {
   return CGPoint(x: left.x * right.x, y: left.y * right.y)
 }
 
-func *= (inout left: CGPoint, right: CGPoint) {
+func *= ( left: inout CGPoint, right: CGPoint) {
   left = left * right
 }
 
@@ -70,7 +70,7 @@ func * (point: CGPoint, scalar: CGFloat) -> CGPoint {
   return CGPoint(x: point.x * scalar, y: point.y * scalar)
 }
 
-func *= (inout point: CGPoint, scalar: CGFloat) {
+func *= ( point: inout CGPoint, scalar: CGFloat) {
   point = point * scalar
 }
 
@@ -78,7 +78,7 @@ func / (left: CGPoint, right: CGPoint) -> CGPoint {
   return CGPoint(x: left.x / right.x, y: left.y / right.y)
 }
 
-func /= (inout left: CGPoint, right: CGPoint) {
+func /= ( left: inout CGPoint, right: CGPoint) {
   left = left / right
 }
 
@@ -86,7 +86,7 @@ func / (point: CGPoint, scalar: CGFloat) -> CGPoint {
   return CGPoint(x: point.x / scalar, y: point.y / scalar)
 }
 
-func /= (inout point: CGPoint, scalar: CGFloat) {
+func /= ( point: inout CGPoint, scalar: CGFloat) {
   point = point / scalar
 }
 
@@ -126,13 +126,13 @@ extension CGPoint {
 // =====================
 
 // π (option-p) is so much nicer than M_PI, don't you think?
-let π = CGFloat(M_PI)
+let π = CGFloat(Double.pi)
 
 // Between any two angles on the same plane, there is a smaller angle
 // and a larger one. Given two angles, this returns the smaller of the two.
 func smallestAngleBetween(angle1: CGFloat, and angle2: CGFloat) -> CGFloat {
   let twoπ = π * 2.0
-  var angle = (angle2 - angle1) % twoπ
+  var angle = (angle2 - angle1).truncatingRemainder(dividingBy: twoπ)
   
   if (angle >= π) {
     angle = angle - twoπ
@@ -166,7 +166,7 @@ extension CGFloat {
   }
   
   // Return a random CGFloat between min and max inclusive.
-  static func random(min min: CGFloat, max: CGFloat) -> CGFloat {
+  static func random(min: CGFloat, max: CGFloat) -> CGFloat {
     assert(min < max)
     return CGFloat.random() * (max - min) + min
   }
@@ -189,7 +189,7 @@ extension Double {
   }
   
   // Return a random Double between min and max inclusive.
-  static func random(min min: Double, max: Double) -> Double {
+  static func random(min: Double, max: Double) -> Double {
     assert(min < max)
     return Double.random() * (max - min) + min
   }
@@ -199,7 +199,7 @@ extension Double {
 extension Int {
   
   // Return a random Int between min and max inclusive.
-  static func random(min min: Int, max: Int) -> Int {
+  static func random(min: Int, max: Int) -> Int {
     return Int(arc4random_uniform(UInt32(max - min) + UInt32(min)))
   }
   
@@ -216,7 +216,7 @@ import AVFoundation
 var backgroundMusicPlayer: AVAudioPlayer!
 
 func playBackgroundMusic(filename: String) {
-  let resourceUrl = NSBundle.mainBundle().URLForResource(filename,
+  let resourceUrl = Bundle.main.url(forResource: filename,
     withExtension: nil)
   guard let url = resourceUrl else {
     print("Couldn't find file \"\(filename)\".")
@@ -224,7 +224,7 @@ func playBackgroundMusic(filename: String) {
   }
   
   do {
-    try backgroundMusicPlayer = AVAudioPlayer(contentsOfURL: url)
+    try backgroundMusicPlayer = AVAudioPlayer(contentsOf: url)
     backgroundMusicPlayer.numberOfLoops = -1
     backgroundMusicPlayer.prepareToPlay()
     backgroundMusicPlayer.play()
@@ -242,7 +242,7 @@ Portions of this code were adapted from "Zombie Conga", an app whose code
 appears in "2D iOS and tvOS Games by Tutorials", copyright © 2015 Razeware LLC.
 See: http://www.raywenderlich.com/store/2d-ios-tvos-games-by-tutorials
 
-The remainder is copyright © 2016 Joey deVilla.
+The remainder is copyright © 2020 Joey deVilla.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

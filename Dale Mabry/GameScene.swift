@@ -20,9 +20,9 @@ class GameScene: SKScene {
   
   // Game time trackers
   // ------------------
-  var lastUpdateTime: NSTimeInterval = 0        // The last time Sprite Kit called update()
-  var timeSinceLastUpdate: NSTimeInterval = 0   // Delta time since last update
-  var timeSinceLastClockTick: NSTimeInterval = 0
+  var lastUpdateTime: TimeInterval = 0        // The last time Sprite Kit called update()
+  var timeSinceLastUpdate: TimeInterval = 0   // Delta time since last update
+  var timeSinceLastClockTick: TimeInterval = 0
   
   
   // Screen coordinates
@@ -36,8 +36,8 @@ class GameScene: SKScene {
   // Player
   // ------
   let player = SKSpriteNode(imageNamed: "player_1")
-  let playerMovePointsPerSec: CGFloat = 480.0          // Max distance zombie can move in a second
-  let playerRotateRadiansPerSecond: CGFloat = 4.0 * π  // Max angle zombie can rotate in a second
+  let playerMovePointsPerSec: CGFloat = 480.0          // Max distance player can move in a second
+  let playerRotateRadiansPerSecond: CGFloat = 4.0 * π  // Max angle player can rotate in a second
   var playerVelocity = CGPoint.zero                    // Initial player velocity vector
 
   let PLAYER_ANIMATION_KEY = "player_animation"
@@ -117,7 +117,7 @@ class GameScene: SKScene {
     }
     textures.append(textures[2])
     textures.append(textures[1])
-    playerAnimation = SKAction.animateWithTextures(textures, timePerFrame: 0.1)
+    playerAnimation = SKAction.animate(with: textures, timePerFrame: 0.1)
     
     super.init(size: size)
   }
@@ -126,14 +126,14 @@ class GameScene: SKScene {
       fatalError("init(coder:) has not been implemented")
   }
   
-  override func didMoveToView(view: SKView) {
-    playBackgroundMusic("backgroundMusic.mp3")
+  override func didMove(to view: SKView) {
+    playBackgroundMusic(filename: "backgroundMusic.mp3")
     
     // Set up initial game state
     // -------------------------
     
     playerLives = 5
-    timeRemaining = 5
+    timeRemaining = 30
     
     
     // Draw the background
@@ -149,30 +149,30 @@ class GameScene: SKScene {
     // --------------
     
     livesLabel.text = "Lives: \(playerLives)"
-    livesLabel.fontColor = SKColor.whiteColor()
+    livesLabel.fontColor = SKColor.white
     livesLabel.fontSize = 100
     livesLabel.zPosition = 100
-    livesLabel.horizontalAlignmentMode = .Left
-    livesLabel.verticalAlignmentMode = .Bottom
+    livesLabel.horizontalAlignmentMode = .left
+    livesLabel.verticalAlignmentMode = .bottom
     livesLabel.position = CGPoint(x: 60, y: 225)
     addChild(livesLabel)
     
     timeLabel.text = "Time: \(timeRemaining)"
-    timeLabel.fontColor = SKColor.whiteColor()
+    timeLabel.fontColor = SKColor.white
     timeLabel.fontSize = 100
     timeLabel.zPosition = 100
-    timeLabel.horizontalAlignmentMode = .Left
-    timeLabel.verticalAlignmentMode = .Bottom
+    timeLabel.horizontalAlignmentMode = .left
+    timeLabel.verticalAlignmentMode = .bottom
     timeLabel.position = CGPoint(x: 1500, y: 225)
     addChild(timeLabel)
     
     playerDiedLabel.text = "Time's up"
-    playerDiedLabel.fontColor = SKColor.whiteColor()
+    playerDiedLabel.fontColor = SKColor.white
     playerDiedLabel.fontSize = 100
     playerDiedLabel.zPosition = 100
     playerDiedLabel.position = CGPoint(x: frame.width / 2,
                                     y: frame.height / 2)
-    playerDiedLabel.hidden = true
+    playerDiedLabel.isHidden = true
     addChild(playerDiedLabel)
     
     
@@ -213,7 +213,7 @@ class GameScene: SKScene {
   // MARK: Event loop methods
   // ========================
   
-  override func update(currentTime: NSTimeInterval) {
+  override func update(_ currentTime: TimeInterval) {
     // This method gets called at the start of each event loop,
     // immediate after Sprite Kit renders the latest frame onscreen.
     //
@@ -233,7 +233,7 @@ class GameScene: SKScene {
           timeSinceLastClockTick = 0
           
           if timeRemaining <= 0 && playerIsAlive {
-            killPlayer(.OutOfTime)
+            killPlayer(causeOfDeath: .OutOfTime)
           }
         }
       }
@@ -252,7 +252,7 @@ class GameScene: SKScene {
           stopPlayerAnimation()
         }
         else {
-          movePlayerToward(destination)
+          movePlayerToward(destination: destination)
         }
         boundsCheckPlayer()
       }
@@ -269,23 +269,23 @@ class GameScene: SKScene {
     // and evaluating other sprite interactions.
     
     if playerHitCar() && playerIsAlive {
-      killPlayer(.HitByCar)
+      killPlayer(causeOfDeath: .HitByCar)
     }
     else if player.position.y >= 1340 {
       backgroundMusicPlayer.stop()
       let gameOverScene = GameOverScene(size: size, won: true)
       gameOverScene.scaleMode = scaleMode
-      let horizontalFlip = SKTransition.flipHorizontalWithDuration(0.5)
+      let horizontalFlip = SKTransition.flipHorizontal(withDuration: 0.5)
       view?.presentScene(gameOverScene, transition: horizontalFlip)
     }
   }
   
   func playerHitCar() -> Bool {
     var result = false
-    enumerateChildNodesWithName("car") { node, stop in
+    enumerateChildNodes(withName: "car") { node, stop in
       let car = node as! SKSpriteNode
-      if CGRectIntersectsRect(car.frame, self.player.frame) {
-        stop.memory = true
+      if car.frame.intersects(self.player.frame) {
+        stop.initialize(to: true)
         result = true
       }
     }
@@ -309,26 +309,26 @@ class GameScene: SKScene {
     
     playerIsAlive = false
     
-    runAction(playerCollisionSound)
+    run(playerCollisionSound)
     
     player.removeAllActions()
-    let spinAction = SKAction.rotateByAngle(4 * π, duration: 1.0)
-    let shrinkAction = SKAction.scaleBy(0, duration: 1.0)
+    let spinAction = SKAction.rotate(byAngle: 4 * π, duration: 1.0)
+    let shrinkAction = SKAction.scale(by: 0, duration: 1.0)
     let spinAndShrinkAction = SKAction.group([spinAction, shrinkAction])
-    let showMessageAction = SKAction.runBlock {
+    let showMessageAction = SKAction.run {
       if causeOfDeath == .OutOfTime {
         self.playerDiedLabel.text = "Out of time!"
       }
       else {
         self.playerDiedLabel.text = "That'll leave a mark."
       }
-      self.playerDiedLabel.hidden = false
+      self.playerDiedLabel.isHidden = false
     }
-    let pause = SKAction.waitForDuration(4)
-    let hideMessageAction = SKAction.runBlock {
-      self.playerDiedLabel.hidden = true
+    let pause = SKAction.wait(forDuration: 4)
+    let hideMessageAction = SKAction.run {
+      self.playerDiedLabel.isHidden = true
     }
-    let removeLifeAndEvaluate = SKAction.runBlock {
+    let removeLifeAndEvaluate = SKAction.run {
       self.playerLives -= 1
       self.livesLabel.text = "Lives: \(self.playerLives)"
       
@@ -350,11 +350,11 @@ class GameScene: SKScene {
         backgroundMusicPlayer.stop()
         let gameOverScene = GameOverScene(size: self.size, won: false)
         gameOverScene.scaleMode = self.scaleMode
-        let horizontalFlip = SKTransition.flipHorizontalWithDuration(0.5)
+        let horizontalFlip = SKTransition.flipHorizontal(withDuration: 0.5)
         self.view?.presentScene(gameOverScene, transition: horizontalFlip)
       }
     }
-    player.runAction(SKAction.sequence([spinAndShrinkAction,
+    player.run(SKAction.sequence([spinAndShrinkAction,
                                         showMessageAction,
                                         pause,
                                         hideMessageAction,
@@ -369,14 +369,14 @@ class GameScene: SKScene {
   // ======================
   
   func startPlayerAnimation() {
-    if player.actionForKey(PLAYER_ANIMATION_KEY) == nil {
-      player.runAction(SKAction.repeatActionForever(playerAnimation),
+    if player.action(forKey: PLAYER_ANIMATION_KEY) == nil {
+      player.run(SKAction.repeatForever(playerAnimation),
                        withKey: PLAYER_ANIMATION_KEY)
     }
   }
   
   func stopPlayerAnimation() {
-    player.removeActionForKey(PLAYER_ANIMATION_KEY)
+    player.removeAction(forKey: PLAYER_ANIMATION_KEY)
   }
   
 
@@ -386,27 +386,27 @@ class GameScene: SKScene {
   // MARK: Touch handlers
   // ====================
   
-  override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
+  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
     guard let touch = touches.first else {
       return
     }
     
-    lastTouchLocation = touch.locationInNode(self)
-    sceneTouched(lastTouchLocation!)
+    lastTouchLocation = touch.location(in: self)
+    sceneTouched(touchLocation: lastTouchLocation!)
     
   }
   
-  override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?) {
+  override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
     guard let touch = touches.first else {
       return
     }
     
-    lastTouchLocation = touch.locationInNode(self)
-    sceneTouched(lastTouchLocation!)
+    lastTouchLocation = touch.location(in: self)
+    sceneTouched(touchLocation: lastTouchLocation!)
   }
   
   func sceneTouched(touchLocation: CGPoint) {
-    movePlayerToward(lastTouchLocation!)
+    movePlayerToward(destination: lastTouchLocation!)
   }
   
   
@@ -426,7 +426,7 @@ class GameScene: SKScene {
                     direction: CGPoint,
                     rotateRadiansPerSec: CGFloat)
   {
-    let angle = smallestAngleBetween(sprite.zRotation, and: direction.angle)
+    let angle = smallestAngleBetween(angle1: sprite.zRotation, and: direction.angle)
     let amtToRotate = min(abs(angle), rotateRadiansPerSec * CGFloat(timeSinceLastUpdate))
     sprite.zRotation += amtToRotate * angle.sign()
   }
@@ -435,18 +435,18 @@ class GameScene: SKScene {
   {
     startPlayerAnimation()
     playerVelocity = (destination - player.position).normalized() * playerMovePointsPerSec
-    moveSprite(player,
+    moveSprite(sprite: player,
                velocity: playerVelocity)
-    rotateSprite(player,
+    rotateSprite(sprite: player,
                  direction: playerVelocity,
                  rotateRadiansPerSec: playerRotateRadiansPerSecond)
   }
   
   func boundsCheckPlayer() {
-    let bottomLeft = CGPoint(x: CGRectGetMinX(playableRect),
-      y: CGRectGetMinY(playableRect))
-    let topRight = CGPoint(x: CGRectGetMaxX(playableRect),
-      y: CGRectGetMaxY(playableRect))
+    let bottomLeft = CGPoint(x: playableRect.minX,
+                             y: playableRect.minY)
+    let topRight = CGPoint(x: playableRect.maxX,
+                           y: playableRect.maxY)
     
     if player.position.x <= bottomLeft.x {
       player.position.x = bottomLeft.x
@@ -472,9 +472,9 @@ class GameScene: SKScene {
   // MARK: Non-player element movement
   // =================================
   
-  func createLane(lane lane: Int,
-    timeToCross: NSTimeInterval,
-    timeBetweenCars: NSTimeInterval,
+  func createLane(lane: Int,
+                  timeToCross: TimeInterval,
+                  timeBetweenCars: TimeInterval,
     direction: Direction)
   {
     
@@ -494,8 +494,8 @@ class GameScene: SKScene {
       return carImages[Int.random(min: 0, max: carImages.count)]
     }
     
-    func spawnCar(lane lane: Int,
-      timeToCross: NSTimeInterval,
+    func spawnCar(lane: Int,
+                  timeToCross: TimeInterval,
       direction: Direction,
       imageName: String)
     {
@@ -522,27 +522,27 @@ class GameScene: SKScene {
       
       addChild(car)
       
-      let moveAction = SKAction.moveToX(carEndX, duration: timeToCross)
+      let moveAction = SKAction.moveTo(x: carEndX, duration: timeToCross)
       let cleanUpAction = SKAction.removeFromParent()
-      car.runAction(SKAction.sequence([moveAction, cleanUpAction]))
+      car.run(SKAction.sequence([moveAction, cleanUpAction]))
     }
     
     
     // Main method
     // -----------
     
-    let laneAction = SKAction.repeatActionForever(
+    let laneAction = SKAction.repeatForever(
       SKAction.sequence([
-        SKAction.runBlock {
+        SKAction.run {
           spawnCar(lane: lane,
           timeToCross: timeToCross,
           direction: direction,
-          imageName: randomCarImageName(direction))
+          imageName: randomCarImageName(direction: direction))
         },
-        SKAction.waitForDuration(timeBetweenCars)
+        SKAction.wait(forDuration: timeBetweenCars)
       ])
     )
-    runAction(laneAction)
+    run(laneAction)
 
   }
   
@@ -554,7 +554,7 @@ Portions of this code were adapted from "Zombie Conga", an app whose code
 appears in "2D iOS and tvOS Games by Tutorials", copyright © 2015 Razeware LLC.
 See: http://www.raywenderlich.com/store/2d-ios-tvos-games-by-tutorials
 
-The remainder is copyright © 2016 Joey deVilla.
+The remainder is copyright © 2020 Joey deVilla.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
